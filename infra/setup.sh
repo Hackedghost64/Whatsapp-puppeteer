@@ -65,7 +65,14 @@ EOF
     if [ -n "$CLOUDFLARE_URL" ]; then
         echo "CLOUDFLARE_URL=$CLOUDFLARE_URL" >> "$ENV_FILE"
         echo "    [TRACE] Dynamically rewriting Flutter API base URL to $CLOUDFLARE_URL..."
-        sed -i "s|defaultValue: 'http://localhost:3000'|defaultValue: '$CLOUDFLARE_URL'|g" apps/shop_app/lib/core/config/api_config.dart
+        sed -i -E "s|defaultValue: '[^']+'|defaultValue: '$CLOUDFLARE_URL'|g" apps/shop_app/lib/core/config/api_config.dart
+    else
+        LOCAL_IP=$(hostname -I | awk '{print $1}')
+        if [ -n "$LOCAL_IP" ]; then
+            echo "    [TRACE] No Cloudflare URL provided. Auto-detecting LAN IP for physical device debugging..."
+            echo "    [TRACE] Rewriting Flutter API base URL to http://$LOCAL_IP:3000..."
+            sed -i -E "s|defaultValue: '[^']+'|defaultValue: 'http://$LOCAL_IP:3000'|g" apps/shop_app/lib/core/config/api_config.dart
+        fi
     fi
     
     chmod 600 "$ENV_FILE"
