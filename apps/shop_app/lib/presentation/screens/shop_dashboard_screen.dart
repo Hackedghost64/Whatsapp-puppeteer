@@ -52,10 +52,13 @@ class _SavedContactsTab extends StatefulWidget {
 class _SavedContactsTabState extends State<_SavedContactsTab> {
   final Set<String> _selectedPhones = {};
   final TextEditingController _msgController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void dispose() {
     _msgController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -79,6 +82,23 @@ class _SavedContactsTabState extends State<_SavedContactsTab> {
             ],
           ),
         ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+          child: TextField(
+            controller: _searchController,
+            decoration: const InputDecoration(
+              hintText: 'Search contacts...',
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            onChanged: (val) {
+              setState(() {
+                _searchQuery = val.toLowerCase();
+              });
+            },
+          ),
+        ),
         Expanded(
           child: BlocBuilder<ContactsBloc, ContactsState>(
             builder: (context, state) {
@@ -87,29 +107,56 @@ class _SavedContactsTabState extends State<_SavedContactsTab> {
               } else if (state is ContactsError) {
                 return Center(child: Text(state.error, style: const TextStyle(color: Colors.red)));
               } else if (state is ContactsLoaded) {
-                if (state.contacts.isEmpty) {
+                final filteredContacts = state.contacts.where((c) {
+                  return c.name.toLowerCase().contains(_searchQuery) ||
+                         c.number.contains(_searchQuery);
+                }).toList();
+
+                if (filteredContacts.isEmpty) {
                   return const Center(child: Text('No saved contacts found.'));
                 }
-                return ListView.builder(
-                  itemCount: state.contacts.length,
-                  itemBuilder: (context, index) {
-                    final contact = state.contacts[index];
-                    final isSelected = _selectedPhones.contains(contact.number);
-                    return CheckboxListTile(
-                      title: Text(contact.name),
-                      subtitle: Text(contact.number),
-                      value: isSelected,
+                return Column(
+                  children: [
+                    CheckboxListTile(
+                      title: const Text('Select All Filtered', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue)),
+                      value: filteredContacts.every((c) => _selectedPhones.contains(c.number)) && filteredContacts.isNotEmpty,
                       onChanged: (bool? val) {
                         setState(() {
                           if (val == true) {
-                            _selectedPhones.add(contact.number);
+                            _selectedPhones.addAll(filteredContacts.map((c) => c.number));
                           } else {
-                            _selectedPhones.remove(contact.number);
+                            for (var c in filteredContacts) {
+                              _selectedPhones.remove(c.number);
+                            }
                           }
                         });
                       },
-                    );
-                  },
+                    ),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: filteredContacts.length,
+                        itemBuilder: (context, index) {
+                          final contact = filteredContacts[index];
+                          final isSelected = _selectedPhones.contains(contact.number);
+                          return CheckboxListTile(
+                            title: Text(contact.name),
+                            subtitle: Text(contact.number),
+                            value: isSelected,
+                            onChanged: (bool? val) {
+                              setState(() {
+                                if (val == true) {
+                                  _selectedPhones.add(contact.number);
+                                } else {
+                                  _selectedPhones.remove(contact.number);
+                                }
+                              });
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
                 );
               }
               return const Center(child: Text('Initializing...'));
