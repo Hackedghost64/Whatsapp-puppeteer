@@ -24,7 +24,12 @@ class WhatsAppApiClient implements IWhatsAppApiClient {
       final json = jsonDecode(response.body) as Map<String, dynamic>;
       return ValidationResponseModel.fromJson(json);
     } else {
-      throw Exception('Server error: ${response.statusCode}');
+      try {
+        final errorJson = jsonDecode(response.body);
+        throw Exception(errorJson['error'] ?? 'Server error ${response.statusCode}');
+      } catch (e) {
+        throw Exception('Server error: ${response.statusCode}');
+      }
     }
   }
 
@@ -42,7 +47,12 @@ class WhatsAppApiClient implements IWhatsAppApiClient {
       final List<dynamic> contactsData = json['contacts'] ?? [];
       return contactsData.map((e) => ContactModel.fromJson(e as Map<String, dynamic>)).toList();
     } else {
-      throw Exception('Server error fetching contacts: ${response.statusCode}');
+      try {
+        final errorJson = jsonDecode(response.body);
+        throw Exception(errorJson['error'] ?? 'Server error ${response.statusCode}');
+      } catch (e) {
+        throw Exception('Server error fetching contacts: ${response.statusCode}');
+      }
     }
   }
 
@@ -60,7 +70,12 @@ class WhatsAppApiClient implements IWhatsAppApiClient {
     if (response.statusCode == 202) {
       return true;
     } else {
-      throw Exception('Server error sending bulk: ${response.statusCode}');
+      try {
+        final errorJson = jsonDecode(response.body);
+        throw Exception(errorJson['error'] ?? 'Server error ${response.statusCode}');
+      } catch (e) {
+        throw Exception('Server error sending bulk: ${response.statusCode}');
+      }
     }
   }
 }
