@@ -1,0 +1,31 @@
+{
+  "name": "whatsapp-suite-backend",
+  "version": "1.0.0",
+  "description": "WhatsApp Suite Backend — Puppeteer + WPPConnect message gateway",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "whatsapp",
+    "puppeteer",
+    "wppconnect"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "helmet": "^7.1.0",
+    "puppeteer": "^23.0.0",
+    "qrcode-terminal": "^0.12.0",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}

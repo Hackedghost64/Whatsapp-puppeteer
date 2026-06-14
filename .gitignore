@@ -1,3 +1,8 @@
 node_modules/
 .env
 .local-chromium/
+
+# Local environment secrets
+.env.local
+.env.production
+*.env
