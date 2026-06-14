@@ -67,5 +67,17 @@ flutter pub get
 flutter run
 ```
 
-## 🔒 Production Deployment
-This repository assumes the target host (e.g., Raspberry Pi) provides its own sensitive `.env` configurations. Use `pm2 start infra/pm2.config.js` to initialize the production matrix.
+## 🔒 Production Deployment (C.H.A.S.E. Installer)
+
+We have implemented an interactive CLI installer script to fully automate the production deployment on fresh environments (like a bare-metal Raspberry Pi).
+
+To initialize the production environment, simply execute the setup installer:
+```bash
+./infra/setup.sh
+```
+
+**The C.H.A.S.E. Installer will automatically:**
+1. Install core system dependencies (`nodejs`, `npm`, `pm2`, `chromium-browser`).
+2. Interactively prompt for necessary production tokens (e.g. Cloudflare URLs, API tokens) and securely provision the `.env` file.
+3. Install all backend Node.js modules.
+4. Daemonize the WhatsApp engine via the PM2 matrix for an immortal background process lifecycle.
