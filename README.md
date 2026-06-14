@@ -71,13 +71,17 @@ flutter run
 
 We have implemented an interactive CLI installer script to fully automate the production deployment on fresh environments (like a bare-metal Raspberry Pi).
 
-To initialize the production environment, simply execute the setup installer:
+To initialize the production environment, simply execute the setup installer from the root directory:
 ```bash
 ./infra/setup.sh
 ```
 
-**The C.H.A.S.E. Installer will automatically:**
-1. Install core system dependencies (`nodejs`, `npm`, `pm2`, `chromium-browser`).
-2. Interactively prompt for necessary production tokens (e.g. Cloudflare URLs, API tokens) and securely provision the `.env` file.
-3. Install all backend Node.js modules.
-4. Daemonize the WhatsApp engine via the PM2 matrix for an immortal background process lifecycle.
+**The C.H.A.S.E. Installer will automatically handle what the system needs and explain why:**
+1. **Core System Dependencies (`nodejs`, `chromium-browser`, `pm2`)**
+   * *Why?* Node.js executes the backend logic. Chromium-Browser is required for headless WhatsApp Web automation via Puppeteer (essential for Raspberry Pi). PM2 is used to run the engine as a daemon in the background.
+2. **Interactive Production Tokens (`.env` file)**
+   * *Why?* The backend securely interfaces with external services and requires your specific API keys and Cloudflare URLs to authenticate incoming requests from the Flutter app.
+3. **Backend Node.js Modules (`npm install`)**
+   * *Why?* Fetches all libraries defined in `package.json` (like `puppeteer-core`, `express`, `sqlite3`) necessary to boot the backend.
+4. **Daemonizing the WhatsApp Engine**
+   * *Why?* By initializing the PM2 matrix, the Node.js backend runs "immortally." If it crashes or if the hardware reboots, PM2 will automatically restart the process, keeping your WhatsApp engine constantly online.

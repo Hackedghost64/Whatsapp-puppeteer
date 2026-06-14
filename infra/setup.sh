@@ -13,8 +13,10 @@ echo ""
 # Step 1: System Dependencies
 # ---------------------------------------------------------
 echo ">>> [Step 1] Installing System Dependencies..."
+echo "    [WHY] We need Node.js/npm for the backend engine, PM2 for immortal background processes,"
+echo "          and Chromium-Browser for the headless WhatsApp Web automation via Puppeteer."
 sudo apt update
-sudo apt install -y nodejs npm chromium-browser
+sudo apt install -y nodejs chromium-browser
 sudo npm install -g pm2
 echo "Dependencies installed successfully!"
 echo ""
@@ -23,7 +25,9 @@ echo ""
 # Step 2: Interactive .env Generation
 # ---------------------------------------------------------
 echo ">>> [Step 2] Configuring Environment Variables..."
-ENV_FILE="../apps/whatsapp_backend/.env"
+echo "    [WHY] The backend requires production tokens (like Cloudflare URLs and API keys) to"
+echo "          securely interface with your environment and authenticate requests."
+ENV_FILE="backend/.env"
 
 if [ -f "$ENV_FILE" ]; then
     echo "Existing .env file detected at $ENV_FILE. Skipping interactive generation."
@@ -55,7 +59,8 @@ echo ""
 # Step 3: Node Modules
 # ---------------------------------------------------------
 echo ">>> [Step 3] Installing Backend Node Modules..."
-cd ../apps/whatsapp_backend/ || { echo "Error: Could not navigate to ../apps/whatsapp_backend/"; exit 1; }
+echo "    [WHY] Fetching required packages like Puppeteer and Express to run the backend engine."
+cd backend || { echo "Error: Could not navigate to backend/"; exit 1; }
 npm install
 echo "Node modules installed!"
 echo ""
@@ -64,7 +69,9 @@ echo ""
 # Step 4: PM2 Initialization
 # ---------------------------------------------------------
 echo ">>> [Step 4] Initializing PM2 Production Matrix..."
-cd ../../infra/ || { echo "Error: Could not navigate back to infra/"; exit 1; }
+echo "    [WHY] PM2 daemonizes the Node.js backend so it runs immortally in the background,"
+echo "          auto-restarting if it crashes, keeping your WhatsApp engine online."
+cd ../infra/ || { echo "Error: Could not navigate back to infra/"; exit 1; }
 pm2 start pm2.config.js
 echo "PM2 initialization command executed!"
 echo ""
