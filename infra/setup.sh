@@ -36,18 +36,28 @@ else
     
     # Prompt user interactively
     read -p "Enter your Cloudflare URL (or press Enter to skip): " CLOUDFLARE_URL
-    read -p "Enter any required API Token (or press Enter to skip): " API_TOKEN
+    read -p "Enter your Shop API Key [default: shop-papa-2026]: " SHOP_KEY
+    SHOP_KEY=${SHOP_KEY:-shop-papa-2026}
+    read -p "Enter your Admin API Key [default: admin-papa-2026]: " ADMIN_KEY
+    ADMIN_KEY=${ADMIN_KEY:-admin-papa-2026}
     
     # Securely write to .env
     mkdir -p "$(dirname "$ENV_FILE")"
-    echo "# C.H.A.S.E Auto-Generated Environment Variables" > "$ENV_FILE"
-    
+    cat <<EOF > "$ENV_FILE"
+# C.H.A.S.E Auto-Generated Environment Variables
+PORT=3000
+NODE_ENV=production
+ADMIN_KEY=$ADMIN_KEY
+SHOP_KEY=$SHOP_KEY
+QUEUE_DB_PATH=./queue.sqlite
+BASE_DELAY_MS=2000
+VARIANCE_DELAY_MS=1000
+DRIVER_TYPE=puppeteer
+LOG_BUFFER_SIZE=100
+EOF
+
     if [ -n "$CLOUDFLARE_URL" ]; then
         echo "CLOUDFLARE_URL=$CLOUDFLARE_URL" >> "$ENV_FILE"
-    fi
-    
-    if [ -n "$API_TOKEN" ]; then
-        echo "API_TOKEN=$API_TOKEN" >> "$ENV_FILE"
     fi
     
     chmod 600 "$ENV_FILE"
