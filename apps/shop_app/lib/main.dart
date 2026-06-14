@@ -7,8 +7,18 @@ import 'presentation/blocs/contacts/contacts_bloc.dart';
 import 'presentation/blocs/contacts/contacts_event.dart';
 import 'presentation/screens/shop_dashboard_screen.dart';
 import 'core/config/api_config.dart';
+import 'dart:io';
+
+class MyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+  }
+}
 
 void main() {
+  HttpOverrides.global = MyHttpOverrides();
   runApp(const ShopApp());
 }
 

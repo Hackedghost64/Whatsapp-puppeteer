@@ -69,9 +69,12 @@ EOF
     else
         LOCAL_IP=$(hostname -I | awk '{print $1}')
         if [ -n "$LOCAL_IP" ]; then
+            echo "    [TRACE] Generating self-signed SSL certificates for secure local backend..."
+            mkdir -p backend/certs
+            openssl req -nodes -new -x509 -keyout backend/certs/key.pem -out backend/certs/cert.pem -days 365 -subj "/CN=$LOCAL_IP" 2>/dev/null
             echo "    [TRACE] No Cloudflare URL provided. Auto-detecting LAN IP for physical device debugging..."
-            echo "    [TRACE] Rewriting Flutter API base URL to http://$LOCAL_IP:3000..."
-            sed -i -E "s|defaultValue: '[^']+'|defaultValue: 'http://$LOCAL_IP:3000'|g" apps/shop_app/lib/core/config/api_config.dart
+            echo "    [TRACE] Rewriting Flutter API base URL to https://$LOCAL_IP:3000..."
+            sed -i -E "s|defaultValue: '[^']+'|defaultValue: 'https://$LOCAL_IP:3000'|g" apps/shop_app/lib/core/config/api_config.dart
         fi
     fi
     

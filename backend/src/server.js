@@ -65,13 +65,33 @@ async function start() {
     queueManager.start();
     stateManager.log('info', 'Server: Queue worker started');
 
-    // Bind HTTP server
-    server = app.listen(config.port, '0.0.0.0', () => {
-      stateManager.log('info', `Server: Listening on port ${config.port}`);
-      console.log(`\n  ✅  WhatsApp Suite backend running on http://localhost:${config.port}`);
-      console.log(`  🔧  Driver: ${config.driverType}`);
-      console.log(`  📊  State : ${stateManager.getState()}\n`);
-    });
+    // Bind HTTP or HTTPS server
+    const fs = require('fs');
+    const path = require('path');
+    const https = require('https');
+    
+    const certPath = path.join(__dirname, '../certs/cert.pem');
+    const keyPath = path.join(__dirname, '../certs/key.pem');
+    
+    if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
+      const options = {
+        key: fs.readFileSync(keyPath),
+        cert: fs.readFileSync(certPath)
+      };
+      server = https.createServer(options, app).listen(config.port, '0.0.0.0', () => {
+        stateManager.log('info', `Server: Listening on port ${config.port} (HTTPS)`);
+        console.log(`\n  ✅  WhatsApp Suite secure backend running on https://localhost:${config.port}`);
+        console.log(`  🔧  Driver: ${config.driverType}`);
+        console.log(`  📊  State : ${stateManager.getState()}\n`);
+      });
+    } else {
+      server = app.listen(config.port, '0.0.0.0', () => {
+        stateManager.log('info', `Server: Listening on port ${config.port} (HTTP)`);
+        console.log(`\n  ✅  WhatsApp Suite backend running on http://localhost:${config.port}`);
+        console.log(`  🔧  Driver: ${config.driverType}`);
+        console.log(`  📊  State : ${stateManager.getState()}\n`);
+      });
+    }
   } catch (err) {
     stateManager.log('error', 'Server: Fatal startup error', { error: err.message, stack: err.stack });
     console.error('❌  Fatal startup error:', err);
