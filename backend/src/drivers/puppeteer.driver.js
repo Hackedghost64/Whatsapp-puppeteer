@@ -124,7 +124,10 @@ class PuppeteerDriver extends IWhatsAppDriver {
             // Print clickable link in terminal instead of ASCII QR
             const port = process.env.PORT || 3000;
             const key = process.env.ADMIN_KEY;
-            this.stateManager.log('warn', `⚠️ AUTH REQUIRED: Click this link to scan the QR code: http://localhost:${port}/api/admin/auth?key=${key} ⚠️`);
+            const fs = require('fs');
+            const path = require('path');
+            const protocol = (fs.existsSync(path.join(__dirname, '../../certs/cert.pem'))) ? 'https' : 'http';
+            this.stateManager.log('warn', `⚠️ AUTH REQUIRED: Click this link to scan the QR code: ${protocol}://localhost:${port}/api/admin/auth?key=${key} ⚠️`);
           }
         }
       } catch (error) {
