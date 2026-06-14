@@ -68,73 +68,72 @@ class PuppeteerDriver extends IWhatsAppDriver {
     this.stateManager.log('info', "[TRACE] Hooking DOM for Authentication State...");
     
     // Polling loop for QR Code or Chat Canvas
-    while (this.getState() !== 'ready') {
-      // WhatsApp Web loads the `#side` pane (chat list container) when fully authenticated
-      const isReady = await this.page.$('#side') !== null;
-      let qrData = null;
+    while (this.getState() !== 'cold') {
+      try {
+        // WhatsApp Web loads the `#side` pane (chat list container) when fully authenticated
+        const isReady = await this.page.$('#side') !== null;
+        let qrData = null;
 
-      if (!isReady) {
-        try {
+        if (!isReady) {
           qrData = await this.page.evaluate(() => {
               const canvas = document.querySelector('canvas');
               return canvas ? canvas.toDataURL() : null;
           });
-        } catch (error) {
-          if (error.message.includes('detached')) {
-            this.stateManager.log('warn', '[TRACE] Canvas detached during read, retrying next cycle...');
-            continue;
-          }
-          throw error;
         }
-      }
 
-      if (isReady) {
-        // Check if WPP is already injected to survive DOM reloads
-        const hasWPP = await this.page.evaluate(() => typeof window.WPP !== 'undefined');
-        if (!hasWPP) {
-          this.stateManager.log('info', "[TRACE] Injecting WPPConnect...");
+        if (isReady) {
+          // Check if WPP is already injected to survive DOM reloads
+          const hasWPP = await this.page.evaluate(() => typeof window.WPP !== 'undefined');
+          if (!hasWPP) {
+            this.stateManager.log('info', "[TRACE] Injecting WPPConnect...");
+            
+            // Fetch the raw script in Node.js to bypass any browser-level network/redirect restrictions
+            const fetchRes = await fetch('https://github.com/wppconnect-team/wa-js/releases/latest/download/wppconnect-wa.js');
+            const scriptContent = await fetchRes.text();
+
+            // Inject the raw JS content directly
+            await this.page.addScriptTag({
+              content: scriptContent
+            });
+
+            // Block until WPP namespace is fully active
+            this.stateManager.log('info', "[TRACE] Waiting for WPPConnect initialization...");
+            await this.page.waitForFunction(() => window.WPP && window.WPP.isReady, { timeout: 60000 });
+          }
+
+          if (this.getState() !== 'ready') {
+            this.stateManager.transition('ready');
+            this.stateManager.log('info', "[TRACE] WPPConnect verified. WhatsApp Web is CONNECTED and ready.");
+          }
           
-          // Fetch the raw script in Node.js to bypass any browser-level network/redirect restrictions
-          const fetchRes = await fetch('https://github.com/wppconnect-team/wa-js/releases/latest/download/wppconnect-wa.js');
-          const scriptContent = await fetchRes.text();
-
-          // Inject the raw JS content directly
-          await this.page.addScriptTag({
-            content: scriptContent
+          // Sleep for 5 seconds then check again, so we never lose injection state if the page refreshes
+          await new Promise(r => setTimeout(r, 5000));
+          continue;
+        } else if (qrData && this.getState() !== 'needsAuth') {
+          this.stateManager.transition('needsAuth');
+          this.stateManager.log('info', "[TRACE] QR Code detected. Extracting...");
+          
+          // Extract the actual authentication string from the DOM
+          const qrPayload = await this.page.evaluate(() => {
+            const el = document.querySelector('[data-ref]');
+            return el ? el.getAttribute('data-ref') : null;
           });
 
-          // Block until WPP namespace is fully active
-          this.stateManager.log('info', "[TRACE] Waiting for WPPConnect initialization...");
-          await this.page.waitForFunction(() => window.WPP && window.WPP.isReady, { timeout: 60000 });
+          if (qrPayload) {
+            this._qrDataURL = qrData;
+            // Print clickable link in terminal instead of ASCII QR
+            const port = process.env.PORT || 3000;
+            const key = process.env.ADMIN_KEY;
+            this.stateManager.log('warn', `⚠️ AUTH REQUIRED: Click this link to scan the QR code: http://localhost:${port}/api/admin/auth?key=${key} ⚠️`);
+          }
         }
-
-        if (this.getState() !== 'ready') {
-          this.stateManager.transition('ready');
-          this.stateManager.log('info', "[TRACE] WPPConnect verified. WhatsApp Web is CONNECTED and ready.");
-        }
-        
-        // Sleep for 5 seconds then check again, so we never lose injection state if the page refreshes
-        await new Promise(r => setTimeout(r, 5000));
-        continue;
-      } else if (qrData && this.getState() !== 'needsAuth') {
-        this.stateManager.transition('needsAuth');
-        this.stateManager.log('info', "[TRACE] QR Code detected. Extracting...");
-        
-        // Extract the actual authentication string from the DOM
-        const qrPayload = await this.page.evaluate(() => {
-          const el = document.querySelector('[data-ref]');
-          return el ? el.getAttribute('data-ref') : null;
-        });
-
-        if (qrPayload) {
-          this._qrDataURL = qrData;
-          // Print clickable link in terminal instead of ASCII QR
-          const port = process.env.PORT || 3000;
-          const key = process.env.ADMIN_KEY;
-          this.stateManager.log('warn', `⚠️ AUTH REQUIRED: Click this link to scan the QR code: http://localhost:${port}/api/admin/auth?key=${key} ⚠️`);
+      } catch (error) {
+        if (error.message.includes('detached') || error.message.includes('Execution context was destroyed') || error.message.includes('Target closed')) {
+          this.stateManager.log('warn', '[TRACE] DOM mutated or closed during monitor read, retrying next cycle...');
+        } else {
+          this.stateManager.log('error', `[ERROR] Monitor loop exception: ${error.message}`);
         }
       }
-
       await new Promise(r => setTimeout(r, 2000));
     }
   }
