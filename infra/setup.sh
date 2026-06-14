@@ -35,11 +35,17 @@ else
     echo "No .env file found. Initiating interactive generation..."
     
     # Prompt user interactively
-    read -p "Enter your Cloudflare URL (or press Enter to skip): " CLOUDFLARE_URL
-    read -p "Enter your Shop API Key [default: shop-papa-2026]: " SHOP_KEY
-    SHOP_KEY=${SHOP_KEY:-shop-papa-2026}
-    read -p "Enter your Admin API Key [default: admin-papa-2026]: " ADMIN_KEY
-    ADMIN_KEY=${ADMIN_KEY:-admin-papa-2026}
+    echo ""
+    echo "--- 🌐 CLOUDFLARE SETUP ---"
+    echo "If you provide a Cloudflare URL, the installer will automatically configure the Flutter"
+    echo "app's source code to point to it, enabling immediate remote access out of the box."
+    read -p "Enter your Cloudflare URL (or press Enter for localhost): " CLOUDFLARE_URL
+    echo ""
+    echo "--- 🔑 SECURITY TOKENS ---"
+    read -p "Enter your Shop API Key [default: debug_shop_key]: " SHOP_KEY
+    SHOP_KEY=${SHOP_KEY:-debug_shop_key}
+    read -p "Enter your Admin API Key [default: debug_admin_key]: " ADMIN_KEY
+    ADMIN_KEY=${ADMIN_KEY:-debug_admin_key}
     
     # Securely write to .env
     mkdir -p "$(dirname "$ENV_FILE")"
@@ -58,6 +64,8 @@ EOF
 
     if [ -n "$CLOUDFLARE_URL" ]; then
         echo "CLOUDFLARE_URL=$CLOUDFLARE_URL" >> "$ENV_FILE"
+        echo "    [TRACE] Dynamically rewriting Flutter API base URL to $CLOUDFLARE_URL..."
+        sed -i "s|defaultValue: 'http://localhost:3000'|defaultValue: '$CLOUDFLARE_URL'|g" apps/shop_app/lib/core/config/api_config.dart
     fi
     
     chmod 600 "$ENV_FILE"

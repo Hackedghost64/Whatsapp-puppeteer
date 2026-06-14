@@ -15,7 +15,7 @@ class WhatsAppApiClient implements IWhatsAppApiClient {
       Uri.parse('$baseUrl/api/shop/validate'),
       headers: {
         'Content-Type': 'application/json',
-        'X-Shop-Key': 'shop-papa-2026',
+        'X-Shop-Key': 'debug_shop_key',
       },
       body: jsonEncode({'to': phone}),
     );
@@ -33,7 +33,7 @@ class WhatsAppApiClient implements IWhatsAppApiClient {
     final response = await http.get(
       Uri.parse('$baseUrl/api/shop/contacts'),
       headers: {
-        'X-Shop-Key': 'shop-papa-2026',
+        'X-Shop-Key': 'debug_shop_key',
       },
     );
 
@@ -52,7 +52,7 @@ class WhatsAppApiClient implements IWhatsAppApiClient {
       Uri.parse('$baseUrl/api/shop/bulk'),
       headers: {
         'Content-Type': 'application/json',
-        'X-Shop-Key': 'shop-papa-2026',
+        'X-Shop-Key': 'debug_shop_key',
       },
       body: jsonEncode({'messages': messages}),
     );

@@ -85,8 +85,10 @@ To initialize the production environment, simply execute the setup installer fro
 **The C.H.A.S.E. Installer will automatically handle what the system needs and explain why:**
 1. **Core System Dependencies (`nodejs`, `chromium-browser`, `pm2`)**
    * *Why?* Node.js executes the backend logic. Chromium-Browser is required for headless WhatsApp Web automation via Puppeteer (essential for Raspberry Pi). PM2 is used to run the engine as a daemon in the background.
-2. **Interactive Production Tokens (`.env` file)**
-   * *Why?* The backend securely interfaces with external services and requires your specific API keys and Cloudflare URLs to authenticate incoming requests from the Flutter app.
+2. **Interactive Production Tokens & Cloudflare Injection**
+   * *Why?* The backend securely interfaces with external services and requires your specific API keys to authenticate incoming requests from the Flutter app. 
+   * **Click and Complete Setup**: If you simply hit Enter during the setup prompts, the installer will seamlessly default to using `debug_shop_key` and `debug_admin_key` for immediate out-of-the-box local testing. The Flutter app's internal configurations are pre-wired to sync with these debug keys!
+   * **Dynamic Cloudflare Routing**: If you provide a Cloudflare URL, the script will automatically edit the Flutter application's source code (`api_config.dart`) to immediately point the frontend to your remote endpoint without manual recompilation arguments.
 3. **Backend Node.js Modules (`npm install`)**
    * *Why?* Fetches all libraries defined in `package.json` (like `puppeteer-core`, `express`, `sqlite3`) necessary to boot the backend.
 4. **Daemonizing the WhatsApp Engine**
