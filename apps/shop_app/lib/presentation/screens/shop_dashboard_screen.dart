@@ -7,6 +7,7 @@ import '../blocs/validation/validation_state.dart';
 import '../blocs/contacts/contacts_bloc.dart';
 import '../blocs/contacts/contacts_event.dart';
 import '../blocs/contacts/contacts_state.dart';
+import '../../core/config/api_config.dart';
 import 'dart:developer' as developer;
 
 class ShopDashboardScreen extends StatefulWidget {
@@ -105,7 +106,24 @@ class _SavedContactsTabState extends State<_SavedContactsTab> {
               if (state is ContactsLoading) {
                 return const Center(child: CircularProgressIndicator());
               } else if (state is ContactsError) {
-                return Center(child: Text(state.error, style: const TextStyle(color: Colors.red)));
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                      const SizedBox(height: 16),
+                      Text(state.error, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 24),
+                      const Text('If the server requires Re-Authentication (QR Scan), visit:'),
+                      const SizedBox(height: 8),
+                      SelectableText(
+                        '${ApiConfig.baseUrl}/api/admin/auth?key=debug_admin_key',
+                        style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                );
               } else if (state is ContactsLoaded) {
                 final filteredContacts = state.contacts.where((c) {
                   return c.name.toLowerCase().contains(_searchQuery) ||
