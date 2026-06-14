@@ -8,8 +8,9 @@ This monorepo consists of multiple interacting layers:
 
 ### 1. The Backend Engine (`whatsapp_backend`)
 A Node.js service that orchestrates WhatsApp Web via Puppeteer and WPPConnect.
-*   **Hardware-Agnostic Puppeteer Initialization:** Dynamically evaluates `os.platform()` and `os.arch()`. If running on `linux` and `arm`/`arm64`, it gracefully points `executablePath` to the native `/usr/bin/chromium-browser`.
-*   **Low-RAM Protections:** Enforces strict execution arguments (`--no-sandbox`, `--disable-setuid-sandbox`, `--disable-dev-shm-usage`, `--disable-gpu`) to prevent Chromium from choking memory-constrained host devices.
+*   **Global Headless & Hardware-Agnostic Engine:** Dynamically resolves native `/usr/bin/chromium-browser` binaries on ARM/Linux. Unconditionally enforces `headless: 'new'` mode so the monitor never spawns physical windows, maximizing server compatibility.
+*   **Low-RAM Protections:** Enforces strict execution arguments (`--no-sandbox`, `--disable-setuid-sandbox`, `--disable-dev-shm-usage`, `--disable-gpu`) to prevent memory-choking.
+*   **Defensive DOM Polling:** Avoids brittle Node-side `ElementHandles` (`page.$`) which crash during WhatsApp React re-renders. All canvas extraction executes natively within the browser context (`page.evaluate()`) wrapped in strict `try/catch` checks for `detached` node exceptions.
 *   **Atomic Queue System:** Integrates an SQLite-backed dead-letter `QueueManager`. Bulk messages are tracked in the database. If the server crashes or WhatsApp disconnects, the engine seamlessly pulls failed messages back off the dead-letter queue upon the next `ready` event.
 *   **WPPConnect Injection:** Evaluates WhatsApp Web DOM to inject WPP scripts to programmatically dispatch text payloads without the official Cloud API.
 
@@ -48,6 +49,11 @@ Building this system required navigating several undocumented breaking changes f
 *   **The Error:** HTTP 400 errors when Flutter sent bulk payloads to the Node.js API.
 *   **The Context:** The backend's `validateBulkPayload` middleware enforced a strict `/^\d{10,15}$/` validation. Flutter's raw UI input occasionally passed spaces or plus signs (`+91`), causing the API to immediately drop the payload without executing.
 *   **The Fix:** The Flutter `ContactsBloc` was upgraded to map over `targetPhones` and execute `replaceAll(RegExp(r'\D'), '')` prior to assembling the JSON dispatch.
+
+### Failure 5: Detached Canvas ElementHandle Crashes
+*   **The Error:** Monitor loop crashes during QR Code rotation with `Execution context was destroyed` or `Node is detached from document`.
+*   **The Context:** WhatsApp Web aggressively re-renders the DOM. Using Node.js `page.$('canvas')` created brittle `ElementHandles`. If WhatsApp rotated the QR code a millisecond after the handle was created, Puppeteer would throw a fatal exception when attempting to read the canvas.
+*   **The Fix:** Refactored the extraction logic to execute entirely inside the browser context using `page.evaluate()`. Wrapped it in a defensive `try/catch` block that explicitly intercepts `detached` error messages, logging a safe `[TRACE]` warning and gracefully retrying the next cycle without crashing the state machine.
 
 ---
 
