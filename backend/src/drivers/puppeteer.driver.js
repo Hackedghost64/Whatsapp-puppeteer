@@ -24,7 +24,7 @@ class PuppeteerDriver extends IWhatsAppDriver {
 
     const isArmLinux = platform === 'linux' && (arch === 'arm' || arch === 'arm64');
     const launchOptions = {
-      headless: process.env.HEADLESS === 'true' ? 'new' : false,
+      headless: 'new',
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -71,7 +71,22 @@ class PuppeteerDriver extends IWhatsAppDriver {
     while (this.getState() !== 'ready') {
       // WhatsApp Web loads the `#side` pane (chat list container) when fully authenticated
       const isReady = await this.page.$('#side') !== null;
-      const qrNode = await this.page.$('canvas');
+      let qrData = null;
+
+      if (!isReady) {
+        try {
+          qrData = await this.page.evaluate(() => {
+              const canvas = document.querySelector('canvas');
+              return canvas ? canvas.toDataURL() : null;
+          });
+        } catch (error) {
+          if (error.message.includes('detached')) {
+            this.stateManager.log('warn', '[TRACE] Canvas detached during read, retrying next cycle...');
+            continue;
+          }
+          throw error;
+        }
+      }
 
       if (isReady) {
         // Check if WPP is already injected to survive DOM reloads
@@ -101,7 +116,7 @@ class PuppeteerDriver extends IWhatsAppDriver {
         // Sleep for 5 seconds then check again, so we never lose injection state if the page refreshes
         await new Promise(r => setTimeout(r, 5000));
         continue;
-      } else if (qrNode && this.getState() !== 'needsAuth') {
+      } else if (qrData && this.getState() !== 'needsAuth') {
         this.stateManager.transition('needsAuth');
         this.stateManager.log('info', "[TRACE] QR Code detected. Extracting...");
         
@@ -111,13 +126,7 @@ class PuppeteerDriver extends IWhatsAppDriver {
           return el ? el.getAttribute('data-ref') : null;
         });
 
-        // Also save the visual canvas representation for the API endpoint
-        const qrData = await this.page.evaluate(() => {
-          const canvas = document.querySelector('canvas');
-          return canvas ? canvas.toDataURL() : null;
-        });
-
-        if (qrPayload && qrData) {
+        if (qrPayload) {
           this._qrDataURL = qrData;
           // Print clickable link in terminal instead of ASCII QR
           const port = process.env.PORT || 3000;
