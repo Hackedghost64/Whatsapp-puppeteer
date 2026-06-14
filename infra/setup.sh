@@ -1,0 +1,92 @@
+#!/bin/bash
+
+# ==========================================
+# C.H.A.S.E. Production Setup Installer
+# ==========================================
+
+echo "================================================="
+echo " Starting C.H.A.S.E. Production Setup...         "
+echo "================================================="
+echo ""
+
+# ---------------------------------------------------------
+# Step 1: System Dependencies
+# ---------------------------------------------------------
+echo ">>> [Step 1] Installing System Dependencies..."
+sudo apt update
+sudo apt install -y nodejs npm chromium-browser
+sudo npm install -g pm2
+echo "Dependencies installed successfully!"
+echo ""
+
+# ---------------------------------------------------------
+# Step 2: Interactive .env Generation
+# ---------------------------------------------------------
+echo ">>> [Step 2] Configuring Environment Variables..."
+ENV_FILE="../apps/whatsapp_backend/.env"
+
+if [ -f "$ENV_FILE" ]; then
+    echo "Existing .env file detected at $ENV_FILE. Skipping interactive generation."
+else
+    echo "No .env file found. Initiating interactive generation..."
+    
+    # Prompt user interactively
+    read -p "Enter your Cloudflare URL (or press Enter to skip): " CLOUDFLARE_URL
+    read -p "Enter any required API Token (or press Enter to skip): " API_TOKEN
+    
+    # Securely write to .env
+    mkdir -p "$(dirname "$ENV_FILE")"
+    echo "# C.H.A.S.E Auto-Generated Environment Variables" > "$ENV_FILE"
+    
+    if [ -n "$CLOUDFLARE_URL" ]; then
+        echo "CLOUDFLARE_URL=$CLOUDFLARE_URL" >> "$ENV_FILE"
+    fi
+    
+    if [ -n "$API_TOKEN" ]; then
+        echo "API_TOKEN=$API_TOKEN" >> "$ENV_FILE"
+    fi
+    
+    chmod 600 "$ENV_FILE"
+    echo ".env file provisioned securely!"
+fi
+echo ""
+
+# ---------------------------------------------------------
+# Step 3: Node Modules
+# ---------------------------------------------------------
+echo ">>> [Step 3] Installing Backend Node Modules..."
+cd ../apps/whatsapp_backend/ || { echo "Error: Could not navigate to ../apps/whatsapp_backend/"; exit 1; }
+npm install
+echo "Node modules installed!"
+echo ""
+
+# ---------------------------------------------------------
+# Step 4: PM2 Initialization
+# ---------------------------------------------------------
+echo ">>> [Step 4] Initializing PM2 Production Matrix..."
+cd ../../infra/ || { echo "Error: Could not navigate back to infra/"; exit 1; }
+pm2 start pm2.config.js
+echo "PM2 initialization command executed!"
+echo ""
+
+# ---------------------------------------------------------
+# Step 5: The Instruction Guide
+# ---------------------------------------------------------
+echo "=========================================================================="
+echo "                   C.H.A.S.E. SYSTEM INITIALIZED                          "
+echo "=========================================================================="
+echo ""
+echo "✅ SUCCESS: The WhatsApp backend engine is now running immortally in the background."
+echo ""
+echo "🔍 HOW TO VIEW BACKEND LOGS:"
+echo "   Monitor real-time engine health and trace payloads via PM2:"
+echo "   $ pm2 logs"
+echo ""
+echo "📱 HOW TO COMPILE THE FLUTTER APPS:"
+echo "   With the endpoints now established, you can build your frontend apps."
+echo "   Navigate to the target app and run it:"
+echo "   $ cd ../apps/shop_app"
+echo "   $ flutter pub get"
+echo "   $ flutter run"
+echo ""
+echo "=========================================================================="
